@@ -1,45 +1,17 @@
 //import tf from "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"
 
 import * as model from "./model.js"
-import { VerticalLayerContainer, Layer_visual } from "./visual.js"
+import { VerticalLayerContainer, Layer_visual, Add_placeholder } from "./visual.js"
 import * as dataset from "./dataset.js"
 
 window.onload = function() {
     graphs = new GraphsManager();
     let init_p = Promise.all([model.load(), dataset.load()]);
     init_p.then(() => {
+        list_img();
         remove_wait_cover();
         console.log("tf backend: ", tf.getBackend());
         graphs.addGraph();
-        graphs.addGraph();
-        graphs.addGraph();
-        graphs.addGraph();
-        graphs.addGraph();
-        graphs.addGraph();
-        graphs.addGraph();
-        let img_tensor1 = dataset.getImagesByLabel(1)[3];
-        let img_tensor2 = dataset.getImagesByLabel(9)[4];
-        let img_tensor3 = dataset.getImagesByLabel(7)[9];
-        let img_tensor4 = dataset.getImagesByLabel(1)[4];
-        graphs.graphs[0].addImg_pred(img_tensor1, 1);
-        graphs.graphs[1].addImg_pred(img_tensor2, 9);
-        graphs.graphs[2].addImg_pred(img_tensor3, 7);
-
-        for (let i = 0; i < 10; i++) {
-            let img_tensor = dataset.getImagesByLabel(1)[i];
-            graphs.graphs[4].addImg_pred(img_tensor, 1);
-            graphs.graphs[3].addImg_pred(img_tensor, 1);
-        }
-        for (let i = 0; i < 10; i++) {
-            let img_tensor = dataset.getImagesByLabel(9)[i];
-            graphs.graphs[5].addImg_pred(img_tensor, 9);
-            graphs.graphs[3].addImg_pred(img_tensor, 9);
-        }
-        for (let i = 0; i < 10; i++) {
-            let img_tensor = dataset.getImagesByLabel(7)[i];
-            graphs.graphs[6].addImg_pred(img_tensor, 7);
-            graphs.graphs[3].addImg_pred(img_tensor, 7);
-        }
     });
 }
 
@@ -52,16 +24,60 @@ function remove_wait_cover() {
     }
 }
 
+
+
+function list_img() {
+    let list = document.getElementById("Title-img");
+    console.log(list);
+    let i1 = dataset.getImagesByLabelAndy(1);
+    let i2 = dataset.getImagesByLabelAndy(9);
+    let i3 = dataset.getImagesByLabelAndy(7);
+    let photo_tensors = [...i1, ...i2, ...i3]
+    console.log(photo_tensors);
+    photo_tensors.sort((a, b) => { return Math.random() - 0.5 });
+    for (let i = 0; i < 15; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'list-img';
+        canvas.draggable = true;
+        canvas.width = 32;
+        canvas.height = 32;
+        canvas.style.width = '72px';
+        canvas.style.height = '72px';
+        let tensor_img = photo_tensors[i][0];
+        console.log(tensor_img);
+        let new_img = { y: photo_tensors[i][1], x: tensor_img, canvas: canvas };
+        canvas.ondragstart = (e) => {
+            e.dataTransfer.clearData();
+            e.dataTransfer.setData('i', i);
+            console.log(tensor_img);
+            console.log("drag start");
+        }
+        let tensor = tf.reshape(photo_tensors[i][0], [32, 32, 3]);
+        tensor = tf.div(tensor, 2);
+        tensor = tf.add(tensor, 0.5);
+        tf.browser.toPixels(tensor, canvas);
+        list.appendChild(canvas);
+        imgs.push(new_img);
+    }
+}
+
 var graphs = null;
+var imgs = [];
 
 
 export class GraphsManager {
     html = document.getElementById("graphs");
+    add_placeholder = null;
 
     graphs = [];
 
     constructor() {
         this.html = document.getElementById("graphs");
+        this.add_placeholder = new Add_placeholder();
+        this.add_placeholder.attachTo(this);
+        this.add_placeholder.add_callback = () => {
+            this.addGraph();
+        }
     }
 
     addHTMLElement(element) {
@@ -71,6 +87,9 @@ export class GraphsManager {
     addGraph() {
         let graph = new Graph();
         this.graphs.push(graph);
+        this.add_placeholder.remove();
+        graph.attachTo(this);
+        this.add_placeholder.attachTo(this);
     }
 }
 
@@ -92,15 +111,53 @@ class Graph {
     tracklist_type = [];
     updaters = [];
 
+    html = document.createElement("div");
+    dropzone = document.createElement("div");
+
     constructor() {
+        this.html.className = "graph";
         let nodes = model.mapoutSync();
         for (let i = 0; i < nodes.length; i++) {
             this.tracklist.push(nodes[i].name);
             this.tracklist_type.push(nodes[i].op);
         }
+        this.dropzone.innerText = "Drop image here";
+        this.dropzone.style.width = "85%";
+        this.dropzone.style.height = "72px";
+        this.dropzone.style.border = "5px solid #000";
+        this.dropzone.style.borderRadius = "4px";
+        this.dropzone.style.textAlign = "center";
+        this.dropzone.style.lineHeight = "36px";
+        this.dropzone.style.whiteSpace = "nowrap";
+        this.dropzone.style.overflowY = "hidden";
+        this.dropzone.style.overflowX = "auto";
+        this.dropzone.style.display = "flex";
+        this.dropzone.style.flexDirection = "row";
+        // horizontal scroll only
+        this.dropzone.addEventListener("drop", (e) => {
+            if (this.dropzone.textContent != "")
+                this.dropzone.innerText = "";
+            let i = e.dataTransfer.getData('i');
+            let x = imgs[i].x;
+            let y = imgs[i].y;
+            // copy the image from previous canvas
+            let canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            canvas.style.width = '64px';
+            canvas.style.height = '64px';
+            this.dropzone.appendChild(canvas);
+            canvas.getContext('2d').drawImage(imgs[i].canvas, 0, 0);
+
+            this.addImg_pred(x, y);
+        });
+        this.dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+        });
+        this.html.appendChild(this.dropzone);
 
         let container = new VerticalLayerContainer();
-        container.attachTo(graphs);
+        container.attachTo(this);
         for (let i = 0; i < nodes.length; i++) {
             let layer = new Layer_visual(nodes[i].name, model.getSubnodeCount(nodes[i]));
             container.addLayer(layer);
@@ -156,6 +213,7 @@ class Graph {
 
     addImg_pred(tensor, gt) {
         console.log(this.tracklist)
+        console.log(gt)
         model.predict(tensor, this.tracklist).then((pred_output) => {
             console.log(pred_output[1][0].shape);
             let pred = pred_output[0];
@@ -164,26 +222,21 @@ class Graph {
         });
     }
 
-    // async TEST() {
-    //     console.log("TEST");
-    //     let [x, y] = await dataset.TEST_get_one();
-    //     console.log(x, y);
-    //     let gt = y.arraySync()[0];
-    //     let pred = await model.predict(x, this.tracklist);
-    //     console.log(pred[0]);
-    //     this.update(pred[1], gt);
-    // }
+    attachTo(graphs) {
+        graphs.addHTMLElement(this.html);
+    }
 
+    addHTMLElement(element) {
+        this.html.appendChild(element);
+    }
 
 
     update(tensors, gt, img_id) {
         console.log("update", this.updaters);
         for (let i = 0; i < this.updaters.length; i++) {
-            console.log("start update", i);
-            console.log(tensors);
             this.updaters[i](tensors[i], gt, img_id);
-            console.log("finish update", i);
         }
+        return img_id;
     }
 }
 

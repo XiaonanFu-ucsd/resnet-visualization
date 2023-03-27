@@ -114,8 +114,11 @@ export async function predict(x, trackList_layerOutput) {
     } else {
         trackList_layerOutput.push("output_1");
     }
+    console.log(x.shape)
     let output_tensor_list = await model.executeAsync({ 'input_1': x }, trackList_layerOutput);
+    console.log('finish predict')
     let y = output_tensor_list.pop();
+    trackList_layerOutput.pop();
     let pred = y.argMax(1).dataSync()[0];
     console.log("Predicted: " + pred);
     return [pred, output_tensor_list];

@@ -53,7 +53,7 @@ export class Block_visual {
         this.name = name;
         this.block_html = document.createElement("span");
         this.block_html.className = "block";
-        this.block_html.style.backgroundColor = "rgba(100, 100, 100, 0.5)";
+        this.block_html.style.backgroundColor = "rgba(37, 37, 38, 1)";
     }
 
     get_html() {
@@ -144,12 +144,43 @@ export class VerticalLayerContainer {
 
 export class Add_placeholder {
     html = null;
+    button = null;
+    add_callback = null;
     constructor() {
         this.html = document.createElement("div");
         this.html.className = "add_placeholder";
+        this.html.style.width = "120px";
+        this.html.style.height = "100px";
+        this.html.style.display = 'flex';
+        this.html.style.flexDirection = 'column';
+        this.html.style.justifyContent = 'center';
+        this.html.style.alignItems = 'center';
+
+
+        this.button = document.createElement("div");
+        this.button.innerText = "+";
+        this.button.style.border = "5px solid";
+        this.button.style.borderRadius = "50%";
+        this.button.style.width = "50px";
+        this.button.style.height = "50px";
+        this.button.style.lineHeight = "50px";
+        this.button.style.textAlign = "center";
+        this.button.style.fontSize = "32px";
+        this.button.style.cursor = "pointer";
+        this.html.appendChild(this.button);
+
+        this.button.addEventListener("click", () => {
+            if (this.add_callback) {
+                this.add_callback();
+            }
+        })
     }
 
     attachTo(parent) {
         parent.addHTMLElement(this.html);
+    }
+
+    remove() {
+        this.html.remove();
     }
 }

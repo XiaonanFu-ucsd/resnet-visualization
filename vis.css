@@ -16,7 +16,6 @@ body {
 #graphs {
     display: flex;
     flex-direction: row;
-    align-items: center;
 }
 
 #wait-cover {
@@ -31,4 +30,16 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 72px;
+}
+
+#Title-img {
+    display: flex;
+    /* justify-content: center; */
+    align-items: center;
+    height: 150px;
+    flex-wrap: nowrap;
+}
+
+.list-img {
+    margin-left: 10px;
 }

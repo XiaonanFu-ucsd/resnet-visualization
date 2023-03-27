@@ -72,3 +72,12 @@ export function unique_label() {
 export function getImagesByLabel(label) {
     return label_to_tensor[label];
 }
+
+export function getImagesByLabelAndy(label) {
+    let ret = [];
+    const t = label_to_tensor[label]
+    for (let i = 0; i < t.length; i++) {
+        ret.push([t[i], label]);
+    }
+    return ret;
+}
